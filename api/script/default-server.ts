@@ -11,6 +11,7 @@ import { Response } from "express";
 import { createIpRestrictionMiddleware } from "./middleware/ip-restriction";
 const { DefaultAzureCredential } = require("@azure/identity");
 const { SecretClient } = require("@azure/keyvault-secrets");
+
 const domain = require("express-domain-middleware");
 
 import * as bodyParser from "body-parser";
