@@ -70,8 +70,8 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
 
       // Add IP restriction middleware before other middleware
       const ipRestriction = createIpRestrictionMiddleware({
-        allowedIps: process.env.ALLOWED_IPS ? process.env.ALLOWED_IPS.split(',').map(ip => ip.trim()) : [],
-        restrictedPaths: ["/auth/"]
+        allowedIps: process.env.ALLOWED_IPS ? process.env.ALLOWED_IPS.split(",").map((ip) => ip.trim()) : [],
+        restrictedPaths: ["/auth/"],
       });
       app.use(ipRestriction);
 
