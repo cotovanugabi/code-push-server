@@ -13,9 +13,10 @@ const { DefaultAzureCredential } = require("@azure/identity");
 const { SecretClient } = require("@azure/keyvault-secrets");
 
 import * as bodyParser from "body-parser";
-const domain = require("express-domain-middleware");
 import * as express from "express";
 import * as q from "q";
+
+const domain = require("express-domain-middleware");
 
 interface Secret {
   id: string;
