@@ -8,6 +8,7 @@ import { JsonStorage } from "./storage/json-storage";
 import { RedisManager } from "./redis-manager";
 import { Storage } from "./storage/storage";
 import { Response } from "express";
+import { createIpRestrictionMiddleware } from "./middleware/ip-restriction";
 const { DefaultAzureCredential } = require("@azure/identity");
 const { SecretClient } = require("@azure/keyvault-secrets");
 
@@ -66,6 +67,13 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
 
       // First, to wrap all requests and catch all exceptions.
       app.use(domain);
+
+      // Add IP restriction middleware before other middleware
+      const ipRestriction = createIpRestrictionMiddleware({
+        allowedIps: process.env.ALLOWED_IPS ? process.env.ALLOWED_IPS.split(',').map(ip => ip.trim()) : [],
+        restrictedPaths: ["/auth/"]
+      });
+      app.use(ipRestriction);
 
       // Monkey-patch res.send and res.setHeader to no-op after the first call and prevent "already sent" errors.
       app.use((req: express.Request, res: express.Response, next: (err?: any) => void): any => {
