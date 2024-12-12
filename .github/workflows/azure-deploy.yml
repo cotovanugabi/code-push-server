@@ -25,6 +25,12 @@ jobs:
         working-directory: ./api
         run: npm run build
 
+      - name: Prepare deployment package
+        run: |
+          cp -r ./api/bin/* ./api/bin/
+          cp ./api/package.json ./api/bin/
+          cd ./api/bin && npm install --only=production
+
       - name: Login to Azure
         uses: azure/login@v1
         with:
