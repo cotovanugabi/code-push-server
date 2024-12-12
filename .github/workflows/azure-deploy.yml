@@ -27,7 +27,6 @@ jobs:
 
       - name: Prepare deployment package
         run: |
-          cp -r ./api/bin/* ./api/bin/
           cp ./api/package.json ./api/bin/
           cd ./api/bin && npm install --only=production
 
