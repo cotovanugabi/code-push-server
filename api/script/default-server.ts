@@ -171,7 +171,8 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
         app.use(auth.legacyRouter());
       }
 
-      // Error handler needs to be the last middleware so that it can catch all unhandled exceptions
+      // Error handler needs to be the last middleware so
+      // that it can catch all unhandled exceptions
       app.use(appInsights.errorHandler);
 
       if (isKeyVaultConfigured) {
