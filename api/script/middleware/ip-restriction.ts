@@ -22,14 +22,18 @@ export const createIpRestrictionMiddleware = (config: IpRestrictionConfig) => {
     console.log('Should restrict:', shouldRestrict);
 
     if (shouldRestrict) {
-      const clientIp = req.ip || 
-                      req.connection.remoteAddress || 
-                      req.socket.remoteAddress ||
-                      (req.connection && req.connection['forwardedAddress']);
+      // Get real IP from X-Forwarded-For header
+      const forwardedFor = req.headers['x-forwarded-for'];
+      const clientIp = Array.isArray(forwardedFor)
+        ? forwardedFor[0]
+        : typeof forwardedFor === 'string'
+        ? forwardedFor.split(',')[0]
+        : req.ip || req.connection.remoteAddress;
 
       // Remove IPv6 prefix if present
-      const normalizedClientIp = clientIp?.replace(/^::ffff:/, '');
+      const normalizedClientIp = clientIp?.replace(/^::ffff:/, '').trim();
       
+      console.log('X-Forwarded-For header:', req.headers['x-forwarded-for']);
       console.log('Client IP:', clientIp);
       console.log('Normalized Client IP:', normalizedClientIp);
 
