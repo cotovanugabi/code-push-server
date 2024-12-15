@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from 'express';
 
 interface IpRestrictionConfig {
   allowedIps: string[];
@@ -7,29 +7,51 @@ interface IpRestrictionConfig {
 
 export const createIpRestrictionMiddleware = (config: IpRestrictionConfig) => {
   return (req: Request, res: Response, next: NextFunction) => {
+    // Log configuration
+    console.log('IP Restriction Config:', {
+      allowedIps: config.allowedIps,
+      restrictedPaths: config.restrictedPaths
+    });
+
     // Check if the current path should be restricted
-    const shouldRestrict = config.restrictedPaths.some((path) => req.path.toLowerCase().startsWith(path.toLowerCase()));
+    const shouldRestrict = config.restrictedPaths.some(path => 
+      req.path.toLowerCase().startsWith(path.toLowerCase())
+    );
+
+    console.log('Request path:', req.path);
+    console.log('Should restrict:', shouldRestrict);
 
     if (shouldRestrict) {
-      const clientIp =
-        req.ip || req.connection.remoteAddress || req.socket.remoteAddress || (req.connection && req.connection["forwardedAddress"]);
+      const clientIp = req.ip || 
+                      req.connection.remoteAddress || 
+                      req.socket.remoteAddress ||
+                      (req.connection && req.connection['forwardedAddress']);
 
       // Remove IPv6 prefix if present
-      const normalizedClientIp = clientIp?.replace(/^::ffff:/, "");
+      const normalizedClientIp = clientIp?.replace(/^::ffff:/, '');
+      
+      console.log('Client IP:', clientIp);
+      console.log('Normalized Client IP:', normalizedClientIp);
 
       // Check if client IP is in allowed list
-      const isAllowed = config.allowedIps.some((ip) => {
+      const isAllowed = config.allowedIps.some(ip => {
         // Handle CIDR notation
-        if (ip.includes("/")) {
-          return isIpInCidr(normalizedClientIp, ip);
+        if (ip.includes('/')) {
+          const allowed = isIpInCidr(normalizedClientIp, ip);
+          console.log(`Checking CIDR ${ip} against ${normalizedClientIp}:`, allowed);
+          return allowed;
         }
-        return ip === normalizedClientIp;
+        const allowed = ip === normalizedClientIp;
+        console.log(`Checking IP ${ip} against ${normalizedClientIp}:`, allowed);
+        return allowed;
       });
+
+      console.log('Is IP allowed:', isAllowed);
 
       if (!isAllowed) {
         console.log(`Access denied for IP ${normalizedClientIp} to ${req.path}`);
         return res.status(403).json({
-          message: "Access denied.",
+          message: 'Access denied. Your IP is not whitelisted.'
         });
       }
     }
@@ -42,12 +64,12 @@ export const createIpRestrictionMiddleware = (config: IpRestrictionConfig) => {
 function isIpInCidr(ip: string, cidr: string): boolean {
   const [range, bits = "32"] = cidr.split("/");
   const mask = ~((1 << (32 - parseInt(bits))) - 1);
-
-  const ipParts = ip.split(".").map((part) => parseInt(part));
-  const rangeParts = range.split(".").map((part) => parseInt(part));
-
-  const ipNum = ipParts.reduce((sum, part, i) => sum + (part << (24 - i * 8)), 0);
-  const rangeNum = rangeParts.reduce((sum, part, i) => sum + (part << (24 - i * 8)), 0);
-
+  
+  const ipParts = ip.split(".").map(part => parseInt(part));
+  const rangeParts = range.split(".").map(part => parseInt(part));
+  
+  const ipNum = ipParts.reduce((sum, part, i) => sum + (part << (24 - (i * 8))), 0);
+  const rangeNum = rangeParts.reduce((sum, part, i) => sum + (part << (24 - (i * 8))), 0);
+  
   return (ipNum & mask) === (rangeNum & mask);
 }
