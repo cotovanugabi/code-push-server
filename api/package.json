@@ -12,15 +12,6 @@
     "lint": "npx eslint ./script/**/*.ts",
     "lint:fix": "npx eslint ./script/**/*.ts --fix"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/microsoft/code-push-server"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
-  },
-  "author": "Microsoft",
   "dependencies": {
     "@azure/data-tables": "^13.2.2",
     "@azure/identity": "^4.2.1",
@@ -29,6 +20,8 @@
     "@azure/storage-queue": "^12.13.0",
     "applicationinsights": "^2.7.0",
     "body-parser": "^1.20.2",
+    "swagger-ui-express": "^5.0.0",
+    "@types/swagger-ui-express": "^4.1.6",
     "cookie-session": "^2.0.0",
     "ejs": "^3.1.10",
     "email-validator": "1.0.3",
