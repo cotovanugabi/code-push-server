@@ -1,4 +1,4 @@
-import * as swaggerAutogen from 'swagger-autogen';
+import swaggerAutogen from 'swagger-autogen';
 
 const doc = {
   info: {
