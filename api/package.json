@@ -8,19 +8,11 @@
     "start:env": "node -r dotenv/config ./bin/script/server.js dotenv_config_path=.env dotenv_config_silent=true",
     "clean": "rimraf bin",
     "build": "tsc && shx cp -r ./script/views ./bin/script",
+    "swagger-autogen": "ts-node ./script/swagger-autogen.ts",
     "prettier": "prettier --write \"./**/*.ts\"",
     "lint": "npx eslint ./script/**/*.ts",
     "lint:fix": "npx eslint ./script/**/*.ts --fix"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/microsoft/code-push-server"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
-  },
-  "author": "Microsoft",
   "dependencies": {
     "@azure/data-tables": "^13.2.2",
     "@azure/identity": "^4.2.1",
@@ -29,6 +21,8 @@
     "@azure/storage-queue": "^12.13.0",
     "applicationinsights": "^2.7.0",
     "body-parser": "^1.20.2",
+    "swagger-autogen": "^2.23.7",
+    "swagger-ui-express": "^5.0.0",
     "cookie-session": "^2.0.0",
     "ejs": "^3.1.10",
     "email-validator": "1.0.3",
@@ -69,6 +63,7 @@
     "rimraf": "^5.0.1",
     "shx": "^0.3.4",
     "supertest": "^6.3.3",
-    "typescript": "^5.0.4"
+    "typescript": "^5.0.4",
+    "ts-node": "^10.9.1"
   }
 }
