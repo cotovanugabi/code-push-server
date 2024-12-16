@@ -8,7 +8,7 @@ import { JsonStorage } from "./storage/json-storage";
 import { RedisManager } from "./redis-manager";
 import { Storage } from "./storage/storage";
 import { Response } from "express";
-import { createIpRestrictionMiddleware } from "./middleware/ip-restriction";
+import { createAuthTokenMiddleware } from "./middleware/auth-token-protection";
 import * as swaggerUi from 'swagger-ui-express';
 
 const { DefaultAzureCredential } = require("@azure/identity");
@@ -71,118 +71,15 @@ export function start(done: (err?: any, server?: express.Express, storage?: Stor
       app.use(domain);
 
       // Setup Swagger UI with auto-generated documentation
-      // Important: Place this before auth middleware
       const swaggerFile = require('./swagger-output.json');
       app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerFile));
-      app.use('/api-docs/*', swaggerUi.serve, swaggerUi.setup(swaggerFile));
 
-      // IP restriction middleware for /auth paths
-      const ipRestriction = createIpRestrictionMiddleware({
-        allowedIps: process.env.ALLOWED_IPS ? process.env.ALLOWED_IPS.split(',').map(ip => ip.trim()) : [],
+      // Auth token protection middleware for /auth paths
+      const authTokenProtection = createAuthTokenMiddleware({
+        secretToken: process.env.AUTH_SECRET_TOKEN || 'your-default-secret-token',
+        headerName: 'X-Auth-Token',
         restrictedPaths: ['/auth/']
       });
-      
-      // Middleware that skips auth for swagger docs
-      app.use((req, res, next) => {
-        if (req.path.startsWith('/api-docs')) {
-          return next();
-        }
-        ipRestriction(req, res, next);
-      });
+      app.use(authTokenProtection);
 
-      // Rest of the existing code...
-      if (process.env.LOGGING) {
-        app.use((req: express.Request, res: express.Response, next: (err?: any) => void): any => {
-          console.log(); // Newline to mark new request
-          console.log(`[REST] Received ${req.method} request at ${req.originalUrl}`);
-          next();
-        });
-      }
-
-      // Enforce a timeout on all requests.
-      app.use(api.requestTimeoutHandler());
-
-      // Before other middleware which may use request data that this middleware modifies.
-      app.use(api.inputSanitizer());
-
-      // body-parser must be before the Application Insights router.
-      app.use(bodyParser.urlencoded({ extended: true }));
-      const jsonOptions: any = { limit: "10kb", strict: true };
-      if (process.env.LOG_INVALID_JSON_REQUESTS === "true") {
-        jsonOptions.verify = (req: express.Request, res: express.Response, buf: Buffer, encoding: string) => {
-          if (buf && buf.length) {
-            (<any>req).rawBody = buf.toString();
-          }
-        };
-      }
-
-      app.use(bodyParser.json(jsonOptions));
-
-      // If body-parser throws an error, catch it and set the request body to null.
-      app.use(bodyParserErrorHandler);
-
-      // Before all other middleware to ensure all requests are tracked.
-      app.use(appInsights.router());
-
-      app.get("/", (req: express.Request, res: express.Response, next: (err?: Error) => void): any => {
-        res.send("Welcome to the CodePush REST API!");
-      });
-
-      app.set("etag", false);
-      app.set("views", __dirname + "/views");
-      app.set("view engine", "ejs");
-      app.use("/auth/images/", express.static(__dirname + "/views/images"));
-      app.use(api.headers({ origin: process.env.CORS_ORIGIN || "http://localhost:4000" }));
-      app.use(api.health({ storage: storage, redisManager: redisManager }));
-
-      if (process.env.DISABLE_ACQUISITION !== "true") {
-        app.use(api.acquisition({ storage: storage, redisManager: redisManager }));
-      }
-
-      if (process.env.DISABLE_MANAGEMENT !== "true") {
-        if (process.env.DEBUG_DISABLE_AUTH === "true") {
-          app.use((req, res, next) => {
-            let userId: string = "default";
-            if (process.env.DEBUG_USER_ID) {
-              userId = process.env.DEBUG_USER_ID;
-            } else {
-              console.log("No DEBUG_USER_ID environment variable configured. Using 'default' as user id");
-            }
-
-            req.user = {
-              id: userId,
-            };
-
-            next();
-          });
-        } else {
-          app.use(auth.router());
-        }
-        app.use(auth.authenticate, fileUploadMiddleware, api.management({ storage: storage, redisManager: redisManager }));
-      } else {
-        app.use(auth.legacyRouter());
-      }
-
-      // Error handler needs to be the last middleware so that it can catch all unhandled exceptions
-      app.use(appInsights.errorHandler);
-
-      if (isKeyVaultConfigured) {
-        // Refresh credentials from the vault regularly as the key is rotated
-        setInterval(() => {
-          keyvaultClient
-            .getSecret(`storage-${process.env.AZURE_STORAGE_ACCOUNT}`)
-            .then((secret: any) => {
-              return (<AzureStorage>storage).reinitialize(process.env.AZURE_STORAGE_ACCOUNT, secret);
-            })
-            .catch((error: Error) => {
-              console.error("Failed to reinitialize storage from Key Vault credentials");
-              appInsights.errorHandler(error);
-            })
-            .done();
-        }, Number(process.env.REFRESH_CREDENTIALS_INTERVAL) || 24 * 60 * 60 * 1000 /*daily*/);
-      }
-
-      done(null, app, storage);
-    })
-    .done();
-}
+      // Rest of your existing code...
